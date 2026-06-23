@@ -4,6 +4,7 @@ import android.Manifest
 import android.os.Build
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
@@ -623,7 +624,19 @@ private fun PetMapCard(onSeeMap: () -> Unit, modifier: Modifier = Modifier) {
                     zoomGesturesEnabled = false,
                     rotationGesturesEnabled = false,
                     tiltGesturesEnabled = false
-                )
+                ),
+                onMapClick = { onSeeMap() }
+            )
+
+            // Capa transparente: cualquier toque sobre el mapa abre la pantalla completa
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() },
+                        onClick = onSeeMap
+                    )
             )
 
             // Location pill

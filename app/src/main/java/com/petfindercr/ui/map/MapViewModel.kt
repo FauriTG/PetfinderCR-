@@ -32,27 +32,23 @@ class MapViewModel @Inject constructor(
     fun loadNearbyReportes(context: Context) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
+
+            // 1. Cargar TODOS los reportes como marcadores (siempre se ven los puntos)
+            reporteRepository.getReportes().onSuccess { list ->
+                _uiState.value = _uiState.value.copy(isLoading = false, reportes = list)
+            }.onFailure { e ->
+                _uiState.value = _uiState.value.copy(isLoading = false, error = e.message)
+            }
+
+            // 2. Obtener ubicación actual solo para centrar la cámara (best effort)
             try {
                 val location = getLastKnownLocation(context)
                 if (location != null) {
-                    val latLng = LatLng(location.latitude, location.longitude)
-                    _uiState.value = _uiState.value.copy(currentLocation = latLng)
-                    reporteRepository.getReportesNearby(location.latitude, location.longitude).onSuccess { list ->
-                        _uiState.value = _uiState.value.copy(isLoading = false, reportes = list)
-                    }.onFailure { e ->
-                        _uiState.value = _uiState.value.copy(isLoading = false, error = e.message)
-                    }
-                } else {
-                    // Load all if location unavailable
-                    reporteRepository.getReportes().onSuccess { list ->
-                        _uiState.value = _uiState.value.copy(isLoading = false, reportes = list)
-                    }
+                    _uiState.value = _uiState.value.copy(
+                        currentLocation = LatLng(location.latitude, location.longitude)
+                    )
                 }
-            } catch (e: Exception) {
-                reporteRepository.getReportes().onSuccess { list ->
-                    _uiState.value = _uiState.value.copy(isLoading = false, reportes = list)
-                }
-            }
+            } catch (_: Exception) { /* sin ubicación: la cámara se queda en Costa Rica */ }
         }
     }
 }

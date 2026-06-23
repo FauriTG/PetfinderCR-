@@ -1,0 +1,29 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Paw print centered within the 72dp adaptive safe zone -->
+    <group android:scaleX="1.6"
+        android:scaleY="1.6"
+        android:pivotX="54"
+        android:pivotY="54">
+        <!-- Main pad -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M54,58.5c-6.5,0 -12,4.8 -12,10.7c0,4.6 3.6,7.3 8,7.3c2.2,0 3,-0.8 4,-0.8c1,0 1.8,0.8 4,0.8c4.4,0 8,-2.7 8,-7.3C66,63.3 60.5,58.5 54,58.5z" />
+        <!-- Toe beans -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M43,52m-4.2,0a4.2,4.2 0,1 1,8.4 0a4.2,4.2 0,1 1,-8.4 0" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M65,52m-4.2,0a4.2,4.2 0,1 1,8.4 0a4.2,4.2 0,1 1,-8.4 0" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M48.5,44m-3.8,0a3.8,3.8 0,1 1,7.6 0a3.8,3.8 0,1 1,-7.6 0" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M59.5,44m-3.8,0a3.8,3.8 0,1 1,7.6 0a3.8,3.8 0,1 1,-7.6 0" />
+    </group>
+</vector>

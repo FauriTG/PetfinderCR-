@@ -1,0 +1,4 @@
+-keep class com.petfindercr.data.model.** { *; }
+-keepattributes *Annotation*
+-keepattributes Signature
+-dontwarn kotlinx.serialization.**

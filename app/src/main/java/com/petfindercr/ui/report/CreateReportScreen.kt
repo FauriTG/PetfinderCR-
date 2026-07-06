@@ -3,10 +3,12 @@ package com.petfindercr.ui.report
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -16,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -37,6 +40,7 @@ fun CreateReportScreen(
     var cameraUri by remember { mutableStateOf<Uri?>(null) }
     var showTipoDropdown by remember { mutableStateOf(false) }
     var showEstadoDropdown by remember { mutableStateOf(false) }
+    var sinRaza by remember { mutableStateOf(false) }
 
     val locationPermissions = rememberMultiplePermissionsState(
         listOf(
@@ -132,7 +136,29 @@ fun CreateReportScreen(
             OutlinedTextField(value = state.color, onValueChange = viewModel::onColorChange,
                 label = { Text("Color") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(value = state.raza, onValueChange = viewModel::onRazaChange,
-                label = { Text("Raza") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                label = { Text("Raza") }, singleLine = true, enabled = !sinRaza,
+                modifier = Modifier.fillMaxWidth())
+
+            // Opción "Sin raza"
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        sinRaza = !sinRaza
+                        viewModel.onRazaChange(if (sinRaza) "Sin raza" else "")
+                    }
+            ) {
+                Checkbox(
+                    checked = sinRaza,
+                    onCheckedChange = {
+                        sinRaza = it
+                        viewModel.onRazaChange(if (it) "Sin raza" else "")
+                    }
+                )
+                Text("Sin raza / mestizo")
+            }
+
             OutlinedTextField(value = state.direccion, onValueChange = viewModel::onDireccionChange,
                 label = { Text("Dirección / Zona") }, singleLine = true, modifier = Modifier.fillMaxWidth())
 
@@ -217,6 +243,25 @@ fun CreateReportScreen(
                     Text(error, modifier = Modifier.padding(12.dp), color = MaterialTheme.colorScheme.onErrorContainer)
                 }
             }
+
+            Spacer(Modifier.height(8.dp))
+
+            // Botón principal: Enviar reporte
+            Button(
+                onClick = { viewModel.createReporte(context) },
+                enabled = !state.isSaving,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                if (state.isSaving) {
+                    CircularProgressIndicator(Modifier.size(22.dp), color = MaterialTheme.colorScheme.onPrimary)
+                } else {
+                    Icon(Icons.Default.Send, null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Enviar reporte", fontWeight = FontWeight.SemiBold)
+                }
+            }
+
             Spacer(Modifier.height(24.dp))
         }
     }

@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import kotlinx.coroutines.launch
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.gms.maps.model.CameraPosition
@@ -54,9 +55,14 @@ fun HomeScreen(
     onNavigateToProfile: () -> Unit,
     onNavigateToList: () -> Unit,
     onNavigateToAiMatches: () -> Unit = {},
+    onNavigateToQuickReport: () -> Unit = {},
+    onNavigateToInbox: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
     val permissions = buildList {
         add(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -88,6 +94,7 @@ fun HomeScreen(
         }
     ) { scaffoldPadding ->
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(scaffoldPadding),
@@ -97,13 +104,24 @@ fun HomeScreen(
             item {
                 HomeHeader(
                     profile = state.userProfile,
-                    notifCount = 3,
-                    onProfileClick = onNavigateToProfile
+                    notifCount = state.notifCount,
+                    onProfileClick = onNavigateToProfile,
+                    onMessagesClick = onNavigateToInbox,
+                    onNotificationsClick = onNavigateToNotifications,
+                    onLogoClick = {
+                        viewModel.loadReportes()
+                        viewModel.loadNearbyReports()
+                        scope.launch { listState.animateScrollToItem(0) }
+                    }
                 )
             }
 
             // ── Hero Banner ──
             item { HeroBanner(onReportar = onNavigateToCreate) }
+
+            // ── Reporte rápido ──
+            item { Spacer(Modifier.height(12.dp)) }
+            item { QuickReportButton(onClick = onNavigateToQuickReport) }
 
             // ── Cerca de ti ──
             item { Spacer(Modifier.height(24.dp)) }
@@ -141,6 +159,8 @@ fun HomeScreen(
                     encontradas = state.statsEncontradas,
                     activos = state.statsActivos,
                     coincidencias = 0,
+                    onVerLista = onNavigateToList,
+                    onVerCoincidencias = onNavigateToAiMatches,
                     modifier = Modifier.padding(horizontal = 20.dp)
                 )
             }
@@ -193,7 +213,10 @@ fun HomeScreen(
 private fun HomeHeader(
     profile: Perfil?,
     notifCount: Int,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    onMessagesClick: () -> Unit,
+    onNotificationsClick: () -> Unit = {},
+    onLogoClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -201,23 +224,43 @@ private fun HomeHeader(
             .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = Icons.Default.Pets,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(28.dp)
-        )
-        Spacer(Modifier.width(8.dp))
-        Text(
-            text = "PetFinder CR",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.ExtraBold,
-            color = Color(0xFF0F172A)
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .clickable(onClick = onLogoClick)
+                .padding(4.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Pets,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "PetFinder CR",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF0F172A)
+            )
+        }
         Spacer(Modifier.weight(1f))
+
+        // Messages icon
+        Icon(
+            Icons.Default.ChatBubbleOutline,
+            contentDescription = "Mensajes",
+            tint = Color(0xFF64748B),
+            modifier = Modifier
+                .size(26.dp)
+                .clickable(onClick = onMessagesClick)
+        )
+        Spacer(Modifier.width(16.dp))
 
         // Bell with badge
         BadgedBox(
+            modifier = Modifier.clickable(onClick = onNotificationsClick),
             badge = {
                 if (notifCount > 0) {
                     Badge(containerColor = MaterialTheme.colorScheme.error) {
@@ -268,6 +311,41 @@ private fun HomeHeader(
 // ═══════════════════════════════════════════════
 //  HERO BANNER
 // ═══════════════════════════════════════════════
+
+@Composable
+private fun QuickReportButton(onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(0.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Visibility, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+            }
+            Column(Modifier.weight(1f)) {
+                Text("Vi una mascota en la calle", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFF0F172A))
+                Text("Repórtalo en segundos: foto + ubicación", fontSize = 12.sp, color = Color(0xFF64748B))
+            }
+            Icon(Icons.Default.ChevronRight, null, tint = Color(0xFFCBD5E1))
+        }
+    }
+}
 
 @Composable
 private fun HeroBanner(onReportar: () -> Unit) {
@@ -707,6 +785,8 @@ private fun StatsSection(
     encontradas: Int,
     activos: Int,
     coincidencias: Int,
+    onVerLista: () -> Unit,
+    onVerCoincidencias: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -727,7 +807,8 @@ private fun StatsSection(
                 label = "Mascotas\nPerdidas",
                 icon = Icons.Default.Pets,
                 iconColor = LostRed,
-                bgColor = Color(0xFFFEF2F2)
+                bgColor = Color(0xFFFEF2F2),
+                onClick = onVerLista
             )
             StatCard(
                 modifier = Modifier.weight(1f),
@@ -735,7 +816,8 @@ private fun StatsSection(
                 label = "Mascotas\nEncontradas",
                 icon = Icons.Default.Favorite,
                 iconColor = FoundBlue,
-                bgColor = Color(0xFFEFF6FF)
+                bgColor = Color(0xFFEFF6FF),
+                onClick = onVerLista
             )
         }
         Spacer(Modifier.height(12.dp))
@@ -749,7 +831,8 @@ private fun StatsSection(
                 label = "Coincidencias\nIA",
                 icon = Icons.Default.AutoAwesome,
                 iconColor = Purple700,
-                bgColor = Color(0xFFF5F3FF)
+                bgColor = Color(0xFFF5F3FF),
+                onClick = onVerCoincidencias
             )
             StatCard(
                 modifier = Modifier.weight(1f),
@@ -757,7 +840,8 @@ private fun StatsSection(
                 label = "Reportes\nActivos",
                 icon = Icons.Default.CheckCircle,
                 iconColor = SuccessGreen,
-                bgColor = Color(0xFFF0FDF4)
+                bgColor = Color(0xFFF0FDF4),
+                onClick = onVerLista
             )
         }
     }
@@ -775,10 +859,11 @@ private fun StatCard(
     label: String,
     icon: ImageVector,
     iconColor: Color,
-    bgColor: Color
+    bgColor: Color,
+    onClick: (() -> Unit)? = null
 ) {
     Card(
-        modifier = modifier,
+        modifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier,
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(0.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),

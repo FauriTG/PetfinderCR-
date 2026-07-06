@@ -98,11 +98,20 @@ fun ProfileScreen(
                     nombre = state.perfil?.nombre ?: "Sin nombre",
                     email = state.email,
                     telefono = state.perfil?.telefono,
+                    descripcion = state.perfil?.descripcion,
+                    sexo = state.perfil?.sexo,
+                    procedencia = state.perfil?.procedencia,
                     isEditing = state.isEditing,
                     nombreField = state.nombre,
                     telefonoField = state.telefono,
+                    descripcionField = state.descripcion,
+                    sexoField = state.sexo,
+                    procedenciaField = state.procedencia,
                     onNombreChange = viewModel::onNombreChange,
                     onTelefonoChange = viewModel::onTelefonoChange,
+                    onDescripcionChange = viewModel::onDescripcionChange,
+                    onSexoChange = viewModel::onSexoChange,
+                    onProcedenciaChange = viewModel::onProcedenciaChange,
                     onChangePhoto = { photoLauncher.launch("image/*") }
                 )
 
@@ -111,9 +120,9 @@ fun ProfileScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    StatBox(Modifier.weight(1f), "${state.totalReportes}", "Reportes", Icons.Default.Pets, MaterialTheme.colorScheme.primary)
-                    StatBox(Modifier.weight(1f), "${state.reportesActivos}", "Activos", Icons.Default.CheckCircle, FoundBlue)
-                    StatBox(Modifier.weight(1f), "${state.reportesRecuperados}", "Recuperados", Icons.Default.Favorite, SuccessGreen)
+                    StatBox(Modifier.weight(1f), "${state.totalReportes}", "Reportes", Icons.Default.Pets, MaterialTheme.colorScheme.primary, onNavigateToMyReports)
+                    StatBox(Modifier.weight(1f), "${state.reportesActivos}", "Activos", Icons.Default.CheckCircle, FoundBlue, onNavigateToMyReports)
+                    StatBox(Modifier.weight(1f), "${state.reportesRecuperados}", "Recuperados", Icons.Default.Favorite, SuccessGreen, onNavigateToMyReports)
                 }
 
                 // ── Sección: Cuenta ──
@@ -210,11 +219,20 @@ private fun ProfileHeaderCard(
     nombre: String,
     email: String,
     telefono: String?,
+    descripcion: String?,
+    sexo: String?,
+    procedencia: String?,
     isEditing: Boolean,
     nombreField: String,
     telefonoField: String,
+    descripcionField: String,
+    sexoField: String,
+    procedenciaField: String,
     onNombreChange: (String) -> Unit,
     onTelefonoChange: (String) -> Unit,
+    onDescripcionChange: (String) -> Unit,
+    onSexoChange: (String) -> Unit,
+    onProcedenciaChange: (String) -> Unit,
     onChangePhoto: () -> Unit
 ) {
     Card(
@@ -266,12 +284,40 @@ private fun ProfileHeaderCard(
             if (isEditing) {
                 OutlinedTextField(
                     value = nombreField, onValueChange = onNombreChange,
-                    label = { Text("Nombre") }, leadingIcon = { Icon(Icons.Default.Person, null) },
+                    label = { Text("Nombre público") }, leadingIcon = { Icon(Icons.Default.Person, null) },
                     singleLine = true, modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = telefonoField, onValueChange = onTelefonoChange,
                     label = { Text("Teléfono") }, leadingIcon = { Icon(Icons.Default.Phone, null) },
+                    singleLine = true, modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = descripcionField, onValueChange = onDescripcionChange,
+                    label = { Text("Descripción (opcional)") },
+                    placeholder = { Text("Cuéntale a los demás sobre ti…") },
+                    leadingIcon = { Icon(Icons.Default.Info, null) },
+                    minLines = 2, maxLines = 4, modifier = Modifier.fillMaxWidth()
+                )
+                // Sexo (opcional): selector de chips
+                Column(Modifier.fillMaxWidth()) {
+                    Text("Sexo (opcional)", style = MaterialTheme.typography.labelMedium, color = Color(0xFF64748B))
+                    Spacer(Modifier.height(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("Hombre", "Mujer", "Otro").forEach { opcion ->
+                            FilterChip(
+                                selected = sexoField == opcion,
+                                onClick = { onSexoChange(if (sexoField == opcion) "" else opcion) },
+                                label = { Text(opcion) }
+                            )
+                        }
+                    }
+                }
+                OutlinedTextField(
+                    value = procedenciaField, onValueChange = onProcedenciaChange,
+                    label = { Text("¿De dónde eres? (opcional)") },
+                    placeholder = { Text("Ej: San José, Costa Rica") },
+                    leadingIcon = { Icon(Icons.Default.Place, null) },
                     singleLine = true, modifier = Modifier.fillMaxWidth()
                 )
             } else {
@@ -285,6 +331,29 @@ private fun ProfileHeaderCard(
                         Icon(Icons.Default.Phone, null, modifier = Modifier.size(14.dp), tint = Color(0xFF94A3B8))
                         Text(it, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF64748B))
                     }
+                }
+                // Sexo / procedencia como chips
+                if (!sexo.isNullOrBlank() || !procedencia.isNullOrBlank()) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        sexo?.takeIf { it.isNotBlank() }?.let {
+                            Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.primaryContainer) {
+                                Text(it, modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                                    fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                            }
+                        }
+                        procedencia?.takeIf { it.isNotBlank() }?.let {
+                            Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.primaryContainer) {
+                                Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                                    Icon(Icons.Default.Place, null, modifier = Modifier.size(13.dp), tint = MaterialTheme.colorScheme.primary)
+                                    Text(it, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                                }
+                            }
+                        }
+                    }
+                }
+                descripcion?.takeIf { it.isNotBlank() }?.let {
+                    Text(it, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF475569),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 }
             }
         }
@@ -301,10 +370,11 @@ private fun StatBox(
     value: String,
     label: String,
     icon: ImageVector,
-    color: Color
+    color: Color,
+    onClick: (() -> Unit)? = null
 ) {
     Card(
-        modifier = modifier,
+        modifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier,
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(0.dp),

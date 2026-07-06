@@ -22,11 +22,21 @@ class PerfilRepository @Inject constructor(private val client: SupabaseClient) {
         client.postgrest["perfiles"].upsert(perfil)
     }
 
-    suspend fun updatePerfil(userId: String, nombre: String, telefono: String?): Result<Unit> = runCatching {
+    suspend fun updatePerfil(
+        userId: String,
+        nombre: String,
+        telefono: String?,
+        descripcion: String? = null,
+        sexo: String? = null,
+        procedencia: String? = null
+    ): Result<Unit> = runCatching {
         client.postgrest["perfiles"].update(
             {
                 set("nombre", nombre)
                 set("telefono", telefono)
+                set("descripcion", descripcion)
+                set("sexo", sexo)
+                set("procedencia", procedencia)
             }
         ) {
             filter { eq("id", userId) }

@@ -21,9 +21,17 @@ create table if not exists perfiles (
   nombre text not null,
   telefono text,
   foto_perfil text,
+  descripcion text,                            -- bio pública (opcional)
+  sexo text,                                   -- Hombre / Mujer / Otro (opcional)
+  procedencia text,                            -- de dónde es (opcional)
   estado boolean default true,                 -- activo / inactivo
   fecha_registro timestamptz default now()
 );
+
+-- Migración para bases existentes: agrega las columnas nuevas si faltan
+alter table perfiles add column if not exists descripcion text;
+alter table perfiles add column if not exists sexo text;
+alter table perfiles add column if not exists procedencia text;
 
 alter table perfiles enable row level security;
 
@@ -180,6 +188,44 @@ create policy "Ver notificaciones propias"
 drop policy if exists "Marcar notificacion como leida" on notificaciones;
 create policy "Marcar notificacion como leida"
   on notificaciones for update using (auth.uid() = usuario_id);
+
+-- Permitir que un usuario autenticado cree notificaciones para otros
+-- (necesario para avisos automáticos, p.ej. solicitudes de cambio de estado)
+drop policy if exists "Crear notificaciones" on notificaciones;
+create policy "Crear notificaciones"
+  on notificaciones for insert with check (auth.role() = 'authenticated');
+
+-- =========================
+-- SOLICITUDES DE CAMBIO DE ESTADO
+-- Un usuario que no es dueño puede pedir cambiar el estado de un reporte;
+-- el dueño aprueba o rechaza.
+-- =========================
+create table if not exists solicitudes_estado (
+  id bigint generated always as identity primary key,
+  reporte_id bigint references reportes(id) on delete cascade,
+  solicitante_id uuid references perfiles(id) on delete set null,
+  dueno_id uuid references perfiles(id) on delete cascade,
+  estado_solicitado text not null,
+  estado text not null default 'PENDIENTE',   -- PENDIENTE / APROBADA / RECHAZADA
+  fecha timestamptz default now()
+);
+
+alter table solicitudes_estado enable row level security;
+
+drop policy if exists "Ver solicitudes propias" on solicitudes_estado;
+create policy "Ver solicitudes propias"
+  on solicitudes_estado for select
+  using (auth.uid() = solicitante_id or auth.uid() = dueno_id);
+
+drop policy if exists "Crear solicitud" on solicitudes_estado;
+create policy "Crear solicitud"
+  on solicitudes_estado for insert
+  with check (auth.uid() = solicitante_id);
+
+drop policy if exists "Responder solicitud" on solicitudes_estado;
+create policy "Responder solicitud"
+  on solicitudes_estado for update
+  using (auth.uid() = dueno_id);
 
 -- =========================
 -- TRIGGER: crear el perfil automáticamente al registrarse

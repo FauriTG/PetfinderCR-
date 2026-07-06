@@ -9,6 +9,9 @@ data class Perfil(
     val nombre: String = "",
     val telefono: String? = null,
     @SerialName("foto_perfil") val fotoPerfil: String? = null,
+    val descripcion: String? = null,
+    val sexo: String? = null,          // "Hombre", "Mujer" u otro
+    val procedencia: String? = null,   // de dónde es (opcional)
     @SerialName("fecha_registro") val fechaRegistro: String? = null
 )
 
@@ -56,6 +59,19 @@ data class Mensaje(
     @SerialName("receptor_id") val receptorId: String? = null,
     val mensaje: String = "",
     @SerialName("fecha_envio") val fechaEnvio: String? = null
+)
+
+@Serializable
+data class SolicitudEstado(
+    val id: Long = 0,
+    @SerialName("reporte_id") val reporteId: Long? = null,
+    @SerialName("solicitante_id") val solicitanteId: String? = null,
+    @SerialName("dueno_id") val duenoId: String? = null,
+    @SerialName("estado_solicitado") val estadoSolicitado: String = "",
+    val estado: String = "PENDIENTE",   // PENDIENTE / APROBADA / RECHAZADA
+    val fecha: String? = null,
+    // Joined
+    val reportes: Reporte? = null
 )
 
 @Serializable

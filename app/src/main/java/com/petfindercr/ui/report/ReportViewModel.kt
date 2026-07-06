@@ -9,7 +9,9 @@ import com.petfindercr.data.model.ImagenReporte
 import com.petfindercr.data.model.Reporte
 import com.petfindercr.data.model.TipoMascota
 import com.petfindercr.data.repository.AuthRepository
+import com.petfindercr.data.repository.NotificacionRepository
 import com.petfindercr.data.repository.ReporteRepository
+import com.petfindercr.data.repository.SolicitudRepository
 import com.petfindercr.data.repository.StorageRepository
 import com.petfindercr.utils.getLastKnownLocation
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +28,7 @@ data class ReportUiState(
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
     val error: String? = null,
+    val mensaje: String? = null,
     val success: Boolean = false,
 
     // Form fields
@@ -49,11 +52,15 @@ data class ReportUiState(
 class ReportViewModel @Inject constructor(
     private val reporteRepository: ReporteRepository,
     private val storageRepository: StorageRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val solicitudRepository: SolicitudRepository,
+    private val notificacionRepository: NotificacionRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ReportUiState())
     val uiState: StateFlow<ReportUiState> = _uiState.asStateFlow()
+
+    val currentUserId: String? get() = authRepository.currentUser?.id
 
     init { loadTiposMascota() }
 
@@ -219,4 +226,29 @@ class ReportViewModel @Inject constructor(
             loadReporte(id)
         }
     }
+
+    /**
+     * Un usuario que NO es dueño solicita cambiar el estado del reporte.
+     * Crea la solicitud (PENDIENTE) y notifica al dueño para que apruebe/rechace.
+     */
+    fun solicitarCambioEstado(estado: EstadoReporte) {
+        val reporte = _uiState.value.selectedReporte ?: return
+        val dueno = reporte.usuarioId ?: return
+        val solicitante = authRepository.currentUser?.id ?: return
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isSaving = true)
+            solicitudRepository.crear(reporte.id, solicitante, dueno, estado.name)
+                .onSuccess {
+                    notificacionRepository.crear(
+                        usuarioId = dueno,
+                        titulo = "Solicitud de cambio de estado",
+                        mensaje = "Alguien pidió cambiar \"${reporte.titulo}\" a ${estado.name}. Revisa para aprobar o rechazar."
+                    )
+                    _uiState.value = _uiState.value.copy(isSaving = false, mensaje = "Solicitud enviada al dueño del reporte")
+                }
+                .onFailure { e -> _uiState.value = _uiState.value.copy(isSaving = false, error = e.message) }
+        }
+    }
+
+    fun clearMensaje() { _uiState.value = _uiState.value.copy(mensaje = null, error = null) }
 }

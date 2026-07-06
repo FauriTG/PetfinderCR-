@@ -28,6 +28,9 @@ data class ProfileUiState(
     // Editable fields
     val nombre: String = "",
     val telefono: String = "",
+    val descripcion: String = "",
+    val sexo: String = "",
+    val procedencia: String = "",
     val isEditing: Boolean = false
 ) {
     val totalReportes get() = misReportes.size
@@ -62,7 +65,10 @@ class ProfileViewModel @Inject constructor(
                     isLoading = false,
                     perfil = perfil,
                     nombre = perfil.nombre,
-                    telefono = perfil.telefono ?: ""
+                    telefono = perfil.telefono ?: "",
+                    descripcion = perfil.descripcion ?: "",
+                    sexo = perfil.sexo ?: "",
+                    procedencia = perfil.procedencia ?: ""
                 )
             }.onFailure { e ->
                 _uiState.value = _uiState.value.copy(isLoading = false, error = e.message)
@@ -80,15 +86,22 @@ class ProfileViewModel @Inject constructor(
 
     fun startEditing() { _uiState.value = _uiState.value.copy(isEditing = true) }
     fun cancelEditing() {
+        val p = _uiState.value.perfil
         _uiState.value = _uiState.value.copy(
             isEditing = false,
-            nombre = _uiState.value.perfil?.nombre ?: "",
-            telefono = _uiState.value.perfil?.telefono ?: ""
+            nombre = p?.nombre ?: "",
+            telefono = p?.telefono ?: "",
+            descripcion = p?.descripcion ?: "",
+            sexo = p?.sexo ?: "",
+            procedencia = p?.procedencia ?: ""
         )
     }
 
     fun onNombreChange(v: String) { _uiState.value = _uiState.value.copy(nombre = v) }
     fun onTelefonoChange(v: String) { _uiState.value = _uiState.value.copy(telefono = v) }
+    fun onDescripcionChange(v: String) { _uiState.value = _uiState.value.copy(descripcion = v) }
+    fun onSexoChange(v: String) { _uiState.value = _uiState.value.copy(sexo = v) }
+    fun onProcedenciaChange(v: String) { _uiState.value = _uiState.value.copy(procedencia = v) }
 
     fun savePerfil() {
         if (_uiState.value.nombre.isBlank()) {
@@ -97,7 +110,15 @@ class ProfileViewModel @Inject constructor(
         }
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true, error = null)
-            perfilRepository.updatePerfil(userId, _uiState.value.nombre, _uiState.value.telefono.takeIf { it.isNotBlank() })
+            val s = _uiState.value
+            perfilRepository.updatePerfil(
+                userId = userId,
+                nombre = s.nombre,
+                telefono = s.telefono.takeIf { it.isNotBlank() },
+                descripcion = s.descripcion.takeIf { it.isNotBlank() },
+                sexo = s.sexo.takeIf { it.isNotBlank() },
+                procedencia = s.procedencia.takeIf { it.isNotBlank() }
+            )
                 .onSuccess {
                     _uiState.value = _uiState.value.copy(isSaving = false, isEditing = false, message = "Perfil actualizado")
                     loadPerfil()

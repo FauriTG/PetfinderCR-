@@ -1,0 +1,18 @@
+# ─────────────────────────────────────────────────────────────
+#  PLANTILLA de local.properties  (COPIA este archivo a "local.properties")
+#
+#  local.properties NO se sube a git (está en .gitignore) porque contiene
+#  la ruta de tu SDK y la API key de Google Maps.
+#
+#  Pasos:
+#   1. Copia este archivo y renómbralo a:  local.properties
+#   2. Ajusta sdk.dir a la ruta de tu Android SDK
+#   3. Pide la MAPS_API_KEY al equipo (por un medio PRIVADO, nunca por git)
+#   4. Sync Gradle y compila
+# ─────────────────────────────────────────────────────────────
+
+# Ruta de tu Android SDK (Windows suele ser esta; en Mac/Linux cambia)
+sdk.dir=C:\\Users\\TU_USUARIO\\AppData\\Local\\Android\\Sdk
+
+# API key de Google Maps (pídela al equipo, NO la subas a git)
+MAPS_API_KEY=PON_AQUI_LA_LLAVE

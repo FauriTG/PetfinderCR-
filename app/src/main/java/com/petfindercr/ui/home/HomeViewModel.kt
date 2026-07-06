@@ -9,8 +9,10 @@ import com.petfindercr.data.model.EstadoReporte
 import com.petfindercr.data.model.Perfil
 import com.petfindercr.data.model.Reporte
 import com.petfindercr.data.repository.AuthRepository
+import com.petfindercr.data.repository.NotificacionRepository
 import com.petfindercr.data.repository.PerfilRepository
 import com.petfindercr.data.repository.ReporteRepository
+import com.petfindercr.data.repository.SolicitudRepository
 import com.petfindercr.utils.NotificationHelper
 import com.petfindercr.utils.getLastKnownLocation
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,6 +29,7 @@ data class HomeUiState(
     val cercanos: List<Reporte> = emptyList(),
     val misReportes: List<Reporte> = emptyList(),
     val userProfile: Perfil? = null,
+    val notifCount: Int = 0,
     val isLoading: Boolean = false,
     val isLoadingNearby: Boolean = false,
     val error: String? = null
@@ -41,6 +44,8 @@ class HomeViewModel @Inject constructor(
     private val reporteRepository: ReporteRepository,
     private val perfilRepository: PerfilRepository,
     private val authRepository: AuthRepository,
+    private val solicitudRepository: SolicitudRepository,
+    private val notificacionRepository: NotificacionRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -53,6 +58,17 @@ class HomeViewModel @Inject constructor(
     init {
         loadReportes()
         loadUserData()
+        loadNotifCount()
+    }
+
+    /** Cuenta solicitudes pendientes + notificaciones no leídas para el badge de la campana. */
+    fun loadNotifCount() {
+        val userId = authRepository.currentUser?.id ?: return
+        viewModelScope.launch {
+            val pendientes = solicitudRepository.getPendientesParaDueno(userId).getOrDefault(emptyList()).size
+            val noLeidas = notificacionRepository.getMias(userId).getOrDefault(emptyList()).count { !it.leida }
+            _uiState.value = _uiState.value.copy(notifCount = pendientes + noLeidas)
+        }
     }
 
     fun loadReportes() {
@@ -60,10 +76,20 @@ class HomeViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             val perdidosResult = reporteRepository.getReportes(EstadoReporte.PERDIDA)
             val encontradosResult = reporteRepository.getReportes(EstadoReporte.ENCONTRADA)
+            val perdidos = perdidosResult.getOrDefault(emptyList())
+            val encontrados = encontradosResult.getOrDefault(emptyList())
+
+            // Semilla instantánea de "casos recientes": mezcla los más nuevos
+            // sin esperar el GPS. Luego loadNearbyReports() los refina por cercanía.
+            val recientes = (perdidos + encontrados)
+                .sortedByDescending { it.fechaReporte ?: "" }
+                .take(10)
+
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
-                perdidos = perdidosResult.getOrDefault(emptyList()).take(10),
-                encontrados = encontradosResult.getOrDefault(emptyList()).take(10),
+                perdidos = perdidos.take(10),
+                encontrados = encontrados.take(10),
+                cercanos = if (_uiState.value.cercanos.isEmpty()) recientes else _uiState.value.cercanos,
                 error = perdidosResult.exceptionOrNull()?.message
             )
         }

@@ -23,6 +23,9 @@ Aplicación Android para reportar y encontrar mascotas perdidas y encontradas en
 - **Mapas:** Google Maps Compose
 - **Imágenes:** Coil
 
+## ⚙️ Configuración
+
+Copia [`local.properties.example`](local.properties.example) a `local.properties` y complétalo con la ruta de tu Android SDK y la `MAPS_API_KEY` (pídesela al equipo por un medio privado — no se sube a git).
 
 ## 📱 Requisitos
 
